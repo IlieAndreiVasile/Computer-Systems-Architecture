@@ -1,0 +1,44 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit, gets, printf               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  import printf msvcrt.dll
+    11                                  import gets msvcrt.dll
+    12                                                            
+    13                                  ;%include "c29_reverseWords.asm"
+    14                                  extern reverseWords
+    15                                  
+    16                                  segment data use32 public data
+    17 00000000 <res 00000023>              s resb 35   ;34 characters can be given, the last one must be 0
+    18                                      ;s db 'World Hi Hel', 0
+    19                                      
+    20                                      ;rez db 35 ;same as s, but with the words reversed
+    21 00000023 25732000                    writeFormat db "%s ", 0
+    22                                  
+    23                                      
+    24                                  segment code use32 class=code
+    25                                  start:
+    26                                      ;We read the entire line!
+    27                                      ;gets(s)
+    28 00000000 68[00000000]                push dword s
+    29 00000005 FF15[00000000]              call [gets]
+    30 0000000B 83C404                      add esp, 4    
+    31                                      
+    32                                      ;Call another module. On stack we have return address then 's'
+    33                                      ;Address of result string will be in eax.
+    34 0000000E 68[00000000]                push dword s
+    35 00000013 E8(00000000)                call reverseWords
+    36                                  
+    37                                      ;We print the result, string 'rez'
+    38 00000018 50                          push dword eax
+    39 00000019 68[23000000]                push dword writeFormat
+    40 0000001E FF15[00000000]              call [printf]
+    41 00000024 83C408                      add esp, 4*2
+    42                                      
+    43 00000027 6A00                        push    dword 0      ; push the parameter for exit onto the stack
+    44 00000029 FF15[00000000]              call    [exit]       ; call exit to terminate the program

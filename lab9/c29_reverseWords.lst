@@ -1,0 +1,85 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  
+     4                                  
+     5                                  ; our data is declared here (the variables needed by our program)
+     6                                  segment data use32 public data
+     7                                      
+     8 00000000 <res 00000008>              c1 resq 1 ;this keeps the address where last word ended
+     9 00000008 00000000                    c2 dd 0 ;Parses each word
+    10 0000000C 00                          over db 0   ;When it becomes 1, then we stop the main loop
+    11                                      
+    12 0000000D 23                          rez db 35
+    13                                  
+    14                                  ; our code starts here
+    15                                  segment code use32 public code
+    16                                  global reverseWords
+    17                                  
+    18                                  reverseWords:
+    19                                      ;eax is the address of the input string 's'
+    20 00000000 8B442404                    mov eax, [esp+4]
+    21 00000004 A3[00000000]                mov [c1], eax   ;c1 is initialised with address of 's'
+    22                                      
+    23 00000009 89C6                        mov esi, eax
+    24 0000000B BF[0D000000]                mov edi, rez
+    25                                      ;We iterate each character
+    26                                      repeta1:
+    27                                          ;Load in AL each character of the string
+    28 00000010 AC                              lodsb
+    29                                          
+    30                                          ;0 denotes the end of the string 's'
+    31 00000011 3C00                            cmp al, 0
+    32 00000013 7406                            je stopIt
+    33                                          
+    34                                          ;We encountered an empty space, we parse in reverse until address pointed by c1 is reached
+    35 00000015 3C20                            cmp al, 32      ;ASCII 20h for space and Ah for end of line 
+    36 00000017 740B                            je emptySpace
+    37 00000019 EBF5                            jmp repeta1
+    38                                          
+    39                                          ;It is a character
+    40                                          stopIt:
+    41 0000001B C605[0C000000]01                    mov byte [over], 1
+    42 00000022 EB00                                jmp emptySpace
+    43                                              
+    44                                          ;Empty space means we ended a word and must reverse it
+    45                                          ;Called also if end of line is reached, then after the label finishes we go to 'sfarsit'
+    46                                          emptySpace:
+    47 00000024 8935[08000000]                      mov dword [c2], esi
+    48 0000002A FF0D[08000000]                      dec dword [c2]
+    49                                              
+    50                                              ;Loop backwards each word
+    51                                              repeta2:
+    52 00000030 FF0D[08000000]                      dec dword [c2]
+    53 00000036 A1[08000000]                        mov eax, [c2]
+    54 0000003B 8A00                                mov al, [eax]   ;Move to AL the current character
+    55                                              
+    56 0000003D AA                                  stosb   ;Store in rez the current character
+    57                                              
+    58                                              ;Check if we are at address 'c1'. If yes, then stop the loop.
+    59 0000003E A1[08000000]                        mov eax, [c2]    
+    60 00000043 3B05[00000000]                      cmp eax, [c1]
+    61 00000049 75E5                                jne repeta2
+    62                                              
+    63                                              ;Previous words may leave characters, overwritting the end of the string
+    64                                              ;mov byte [edi], 0
+    65 0000004B C60720                              mov byte [edi], 32
+    66 0000004E 47                                  inc edi
+    67                                              
+    68                                              ;If it doesn't jump then we iterated the whole word and we are at the
+    69 0000004F 8935[00000000]                      mov dword [c1], esi ;move c1 to the beggining of the next word
+    70                                              
+    71                                              ;Is it the end of the line? 'over' is like a boolean variable 
+    72 00000055 803D[0C000000]01                    cmp byte [over], 1
+    73 0000005C 7402                                je sfarsit
+    74                                              
+    75 0000005E EBB0                                jmp repeta1
+    76                                      
+    77                                      ;End of module
+    78                                      sfarsit:
+    79 00000060 4F                          dec edi
+    80 00000061 C60700                      mov byte [edi], 0
+    81 00000064 B8[0D000000]                mov eax, rez    ;Return parameter
+    82 00000069 C20400                      ret 4
+    83                                      
+    84                                      
+    85                                      
